@@ -6,7 +6,7 @@ import java.util.ArrayList;
  *	@author Joel Karel
  *	@version %I%, %G%
  */
-public class Sink implements ProductAcceptor
+public class Sink implements Acceptor<Product>
 {
 	/** All products are kept */
 	private ArrayList<Product> products;

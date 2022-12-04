@@ -5,7 +5,7 @@ package simulation;
  *	@author Joel Karel
  *	@version %I%, %G%
  */
-public class Machine implements CProcess,ProductAcceptor
+public class Machine implements CProcess, Acceptor<Product>
 {
 	/** Product that is being handled  */
 	private Product product;
@@ -14,7 +14,7 @@ public class Machine implements CProcess,ProductAcceptor
 	/** Queue from which the machine has to take products */
 	private Queue queue;
 	/** Sink to dump products */
-	private ProductAcceptor sink;
+	private Acceptor<Product> sink;
 	/** Status of the machine (b=busy, i=idle) */
 	private char status;
 	/** Machine name */
@@ -35,7 +35,7 @@ public class Machine implements CProcess,ProductAcceptor
 	*	@param e	Eventlist that will manage events
 	*	@param n	The name of the machine
 	*/
-	public Machine(Queue q, ProductAcceptor s, CEventList e, String n)
+	public Machine(Queue q, Acceptor<Product> s, CEventList e, String n)
 	{
 		status='i';
 		queue=q;
@@ -55,7 +55,7 @@ public class Machine implements CProcess,ProductAcceptor
 	*	@param n	The name of the machine
 	*        @param m	Mean processing time
 	*/
-	public Machine(Queue q, ProductAcceptor s, CEventList e, String n, double m)
+	public Machine(Queue q, Acceptor<Product> s, CEventList e, String n, double m)
 	{
 		status='i';
 		queue=q;
@@ -75,7 +75,7 @@ public class Machine implements CProcess,ProductAcceptor
 	*	@param n	The name of the machine
 	*        @param st	service times
 	*/
-	public Machine(Queue q, ProductAcceptor s, CEventList e, String n, double[] st)
+	public Machine(Queue q, Acceptor<Product> s, CEventList e, String n, double[] st)
 	{
 		status='i';
 		queue=q;

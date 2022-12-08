@@ -30,13 +30,14 @@ public class Simulation {
         // A sink
         PatientSink si = new PatientSink("Sink 1");
 
-        for(int i = 0; i < 7; ++i){
-            for(int j = 0; j < 5; ++j){
-                new Ambulance(i, q, si,l, String.format("Ambulance %d-%d", i, j));
+        for (int i = 0; i < 7; ++i) {
+            for (int j = 0; j < 5; ++j) {
+                new Ambulance(i, q, si, l, String.format("Ambulance %d-%d", i, j));
             }
         }
+
         // start the eventlist
-        l.start(1000); // 2000 is maximum time
+        l.start(24); // 2000 is maximum time
     }
 
 }

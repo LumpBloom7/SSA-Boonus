@@ -4,13 +4,14 @@ package nl.maastrichtuniversity.dacs.ssa.g14;
 import simulation.Acceptor;
 
 import java.util.ArrayList;
+
 /**
- *	A sink
- *	@author Joel Karel
- *	@version %I%, %G%
+ * A sink
+ *
+ * @author Joel Karel
+ * @version %I%, %G%
  */
-public class PatientSink implements Acceptor<Patient>
-{
+public class PatientSink implements Acceptor<Patient> {
     /** All products are kept */
     private ArrayList<Patient> products;
     /** All properties of products are kept */
@@ -24,10 +25,9 @@ public class PatientSink implements Acceptor<Patient>
     private String name;
 
     /**
-     *	Constructor, creates objects
+     * Constructor, creates objects
      */
-    public PatientSink(String n)
-    {
+    public PatientSink(String n) {
         name = n;
         products = new ArrayList<>();
         numbers = new ArrayList<>();
@@ -38,16 +38,14 @@ public class PatientSink implements Acceptor<Patient>
     }
 
     @Override
-    public boolean giveProduct(Patient p)
-    {
+    public boolean giveProduct(Patient p) {
         number++;
         products.add(p);
         // store stamps
         ArrayList<Double> t = p.getTimes();
         ArrayList<String> e = p.getEvents();
         ArrayList<String> s = p.getStations();
-        for(int i=0;i<t.size();i++)
-        {
+        for (int i = 0; i < t.size(); i++) {
             numbers.add(number);
             times.add(t.get(i));
             events.add(e.get(i));
@@ -56,37 +54,31 @@ public class PatientSink implements Acceptor<Patient>
         return true;
     }
 
-    public int[] getNumbers()
-    {
+    public int[] getNumbers() {
         numbers.trimToSize();
         int[] tmp = new int[numbers.size()];
-        for (int i=0; i < numbers.size(); i++)
-        {
+        for (int i = 0; i < numbers.size(); i++) {
             tmp[i] = (numbers.get(i)).intValue();
         }
         return tmp;
     }
 
-    public double[] getTimes()
-    {
+    public double[] getTimes() {
         times.trimToSize();
         double[] tmp = new double[times.size()];
-        for (int i=0; i < times.size(); i++)
-        {
+        for (int i = 0; i < times.size(); i++) {
             tmp[i] = (times.get(i)).doubleValue();
         }
         return tmp;
     }
 
-    public String[] getEvents()
-    {
+    public String[] getEvents() {
         String[] tmp = new String[events.size()];
         tmp = events.toArray(tmp);
         return tmp;
     }
 
-    public String[] getStations()
-    {
+    public String[] getStations() {
         String[] tmp = new String[stations.size()];
         tmp = stations.toArray(tmp);
         return tmp;

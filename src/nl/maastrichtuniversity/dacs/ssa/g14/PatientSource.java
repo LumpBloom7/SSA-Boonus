@@ -20,40 +20,41 @@ public class PatientSource implements CProcess {
 
     private final static Random rng = new Random();
 
-
-    public PatientSource(PatientType type, Acceptor<Patient> q, CEventList l){
+    public PatientSource(PatientType type, Acceptor<Patient> q, CEventList l) {
         list = l;
         queue = q;
         name = type.toString() + " source";
         patientType = type;
 
-        list.add(this, 0, 0+ drawRandomExponential(33));
+        list.add(this, 0, 0 + drawRandomExponential(33));
     }
 
     @Override
-    public void execute(int type, double tme)
-    {
+    public void execute(int type, double tme) {
         // show arrival
         int location = rng.nextInt(1, 7);
         System.out.printf("New %s patient at location %d, time %f\n", patientType, location, tme);
         // give arrived product to queue
-        Patient p = new Patient(patientType,location , tme);
-        p.stamp(tme,"Creation",name);
+        Patient p = new Patient(patientType, location, tme);
+        p.stamp(tme, "Creation", name);
         queue.giveProduct(p);
         // generate duration
 
-        // TODO: This needs to change
-        double nextDuration = drawRandomExponential(33);
+        double nextDuration = drawRandomExponential(tme);
 
-        list.add(this,0,tme+nextDuration); //target,type,time
+        list.add(this, 0, tme + nextDuration); // target,type,time
     }
 
-    public static double drawRandomExponential(double mean)
-    {
+    public static double drawRandomExponential(double t) {
+        double mean = 1 / lambda(t);
         // draw a [0,1] uniform distributed number
         double u = Math.random();
         // Convert it into a exponentially distributed random variate with mean 33
-        double res = -mean*Math.log(u);
+        double res = -mean * Math.log(u);
         return res;
+    }
+
+    private static double lambda(double t) {
+        return 3 - 2 * Math.sin((5 * (Math.PI + t)) / (6 * Math.PI));
     }
 }

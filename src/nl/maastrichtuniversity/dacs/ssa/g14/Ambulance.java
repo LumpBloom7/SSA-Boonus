@@ -4,6 +4,8 @@ import simulation.*;
 
 public class Ambulance implements CProcess, Acceptor<Patient> {
     private static final int RETURN_TO_DOCK_T = 1;
+    private static final int SHIFT_CHANGE_T = 2;
+    private static final int SHIFT_CHANGE_COMPLETE_T = 3;
 
     private int currentLoc;
 
@@ -30,6 +32,8 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     /** Mean processing time */
     private final double meanProcTime;
 
+    private double shiftStartTime = 0;
+
     /**
      * Constructor
      * Service times are exponentially distributed with mean 30
@@ -50,6 +54,8 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
         name = n;
         meanProcTime = 0.083;
         queue.askProduct(this);
+
+        onShiftChangeEnd(0);
     }
 
     /**
@@ -59,13 +65,26 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
      * @param tme  The current time
      */
     public void execute(int type, double tme) {
+        if (type == SHIFT_CHANGE_T) {
+            if (status == 'b')
+                return;
+
+            onShiftChangeBegin(tme);
+            return;
+        }
+
+        if (type == SHIFT_CHANGE_COMPLETE_T) {
+            onShiftChangeEnd(tme);
+            return;
+        }
+
         if (type == RETURN_TO_DOCK_T) {
             onReturnToDock(tme);
             return;
         }
 
         // show arrival
-        System.out.printf("[%s] Patient brought to hospital, time %f\n", name, tme);
+        System.out.printf("[%s] Patient brought to hospital ; Time: %f\n", name, tme);
         // Remove product from system
         product.stamp(tme, "Production complete", name);
         sink.giveProduct(product);
@@ -74,30 +93,62 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
         status = 'i';
         currentLoc = 0;
 
-        // Ask the queue for products
-        // TODO: or if shift change imminent
-        if (queue.hasProduct())
-            queue.askProduct(this);
-        else
-            returnToDock(tme);
+        if (shiftChangeImminent(tme) || !queue.hasProduct())
+            returnToDock(tme, shiftChangeImminent(tme));
+
+        queue.askProduct(this);
+
     }
 
-    private void returnToDock(double tme) {
+    private boolean shiftChangeImminent(double t) {
+        return (t - shiftStartTime) >= 2 - 0.1f - meanProcTime;
+    }
+
+    private void returnToDock(double tme, boolean changeShifts) {
         var returnTime = Locations.timeBetween(0, dockLocation);
 
-        eventlist.add(this, RETURN_TO_DOCK_T, tme + returnTime);
-        System.out.printf("[%s] No patients, returning to dock @ %d\n", name, dockLocation);
+        if (changeShifts) {
+            eventlist.add(this, RETURN_TO_DOCK_T, tme + returnTime);
+            System.out.printf("[%s] Shift change imminent, returning to dock @ %d ; Time: %f \n", name, dockLocation,
+                    tme);
+        } else {
+            eventlist.add(this, RETURN_TO_DOCK_T, tme + returnTime);
+            System.out.printf("[%s] No patients, returning to dock @ % d; Time: %f \n", name, dockLocation, tme);
+        }
+
         status = 'b';
     }
 
     private void onReturnToDock(double tme) {
-        // TODO: IF SHIFT CHANGE
 
-        System.out.printf("[%s] Returned to dock\n", name);
+        System.out.printf("[%s] Returned to dock ; Time: %f \n", name, tme);
         currentLoc = dockLocation;
 
+        if (shiftChangeImminent(tme)) {
+            onShiftChangeBegin(tme);
+        } else {
+            status = 'i';
+            queue.askProduct(this);
+        }
+    }
+
+    private void onShiftChangeBegin(double tme) {
+        System.out.printf("[%s] Changing crews ; Time: %f\n", name, tme);
+
+        eventlist.add(this, SHIFT_CHANGE_COMPLETE_T, tme + drawRandomExponential(meanProcTime));
+        status = 'b';
+    }
+
+    private void onShiftChangeEnd(double tme) {
+        System.out.printf("[%s] Changed crews; Time: %f\n", name, tme);
+        shiftStartTime = Math.round(tme / 2) * 2;
+
+        queue.askProduct(this); // Remind the queue that we are active again
+
+        // Queue the next shift change
+        eventlist.add(this, SHIFT_CHANGE_T, shiftStartTime + 2 - 0.1f);
+
         status = 'i';
-        queue.askProduct(this);
     }
 
     /**

@@ -101,7 +101,7 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     }
 
     private boolean shiftChangeImminent(double t) {
-        return (t - shiftStartTime) >= 2 - 0.1f - meanProcTime;
+        return (t - shiftStartTime) >= 8 - 0.1f - meanProcTime;
     }
 
     private void returnToDock(double tme, boolean changeShifts) {
@@ -140,13 +140,20 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     }
 
     private void onShiftChangeEnd(double tme) {
-        System.out.printf("[%s] Changed crews; Time: %f\n", name, tme);
-        shiftStartTime = Math.round(tme / 2) * 2;
+
+        shiftStartTime = Math.round(tme / 8) * 8;
+
+        // We can't start a shift after during the night shift
+        // Assuming hour 0 is 7 AM
+        if (shiftStartTime > 16) {
+            System.out.printf("[%s] Night shift, no crew assigned; Time: %f\n", name, tme);
+            return;
+        }
 
         queue.askProduct(this); // Remind the queue that we are active again
 
         // Queue the next shift change
-        eventlist.add(this, SHIFT_CHANGE_T, shiftStartTime + 2 - 0.1f);
+        eventlist.add(this, SHIFT_CHANGE_T, shiftStartTime + 8 - 0.1f);
 
         status = 'i';
     }

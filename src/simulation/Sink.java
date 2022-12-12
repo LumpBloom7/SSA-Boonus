@@ -1,12 +1,14 @@
 package simulation;
 
 import java.util.ArrayList;
+import java.util.List;
+
 /**
  *	A sink
  *	@author Joel Karel
  *	@version %I%, %G%
  */
-public class Sink implements ProductAcceptor
+public class Sink implements Acceptor<Product>
 {
 	/** All products are kept */
 	private ArrayList<Product> products;
@@ -40,9 +42,9 @@ public class Sink implements ProductAcceptor
 		number++;
 		products.add(p);
 		// store stamps
-		ArrayList<Double> t = p.getTimes();
-		ArrayList<String> e = p.getEvents();
-		ArrayList<String> s = p.getStations();
+		List<Double> t = p.getTimes();
+		List<String> e = p.getEvents();
+		List<String> s = p.getStations();
 		for(int i=0;i<t.size();i++)
 		{
 			numbers.add(number);

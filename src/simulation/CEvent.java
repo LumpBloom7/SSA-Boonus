@@ -6,26 +6,24 @@
  */
 package simulation;
 
-public class CEvent
-{
+public class CEvent {
 	/** The object involved with the event */
 	private CProcess target;
 	/** The type of the event */
 	private int type;
 	/** The time on which the event will be executed */
-	private double executionTime;
+	private double timestamp;
 
 	/**
 	*	Constructor for objects
-	*	@param dl	The object that will process the event
-	*	@param tp	The type of the event
-	*	@param tme	The time on which the event will be executed
+	*	@param target	The object that will process the event
+	*	@param type	The type of the event
+	*	@param time	The time on which the event will be executed
 	*/
-	public CEvent(CProcess dl,int tp, double tme)
-	{
-		target=dl;
-		type=tp;
-		executionTime=tme;
+	public CEvent(CProcess target, int type, double time) {
+		this.target = target;
+		this.type = type;
+		this.timestamp = time;
 	}
 	
 	/**
@@ -33,15 +31,15 @@ public class CEvent
 	*/
 	public void execute()
 	{
-		target.execute(type,executionTime);
+		target.execute(type, timestamp);
 	}
 	
 	/**
 	*	Method to ask the event at which time it will be executed
 	*	@return	The time at which the event will be executed
 	*/
-	public double getExecutionTime()
+	public double getTimestamp()
 	{
-		return executionTime;
+		return timestamp;
 	}
 }

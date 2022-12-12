@@ -12,7 +12,7 @@ public class Source implements CProcess
 	/** Eventlist that will be requested to construct events */
 	private CEventList list;
 	/** Queue that buffers products for the machine */
-	private ProductAcceptor queue;
+	private Acceptor<Product> queue;
 	/** Name of the source */
 	private String name;
 	/** Mean interarrival time */
@@ -29,14 +29,14 @@ public class Source implements CProcess
 	*	@param l	The eventlist that is requested to construct events
 	*	@param n	Name of object
 	*/
-	public Source(ProductAcceptor q,CEventList l,String n)
+	public Source(Acceptor<Product> q,CEventList l,String n)
 	{
 		list = l;
 		queue = q;
 		name = n;
 		meanArrTime=33;
 		// put first event in list for initialization
-		list.add(this,0,drawRandomExponential(meanArrTime)); //target,type,time
+		list.add(this,0, 0  +drawRandomExponential(meanArrTime)); //target,type,time
 	}
 
 	/**
@@ -47,7 +47,7 @@ public class Source implements CProcess
 	*	@param n	Name of object
 	*	@param m	Mean arrival time
 	*/
-	public Source(ProductAcceptor q,CEventList l,String n,double m)
+	public Source(Acceptor<Product> q,CEventList l,String n,double m)
 	{
 		list = l;
 		queue = q;
@@ -65,7 +65,7 @@ public class Source implements CProcess
 	*	@param n	Name of object
 	*	@param ia	interarrival times
 	*/
-	public Source(ProductAcceptor q,CEventList l,String n,double[] ia)
+	public Source(Acceptor<Product> q,CEventList l,String n,double[] ia)
 	{
 		list = l;
 		queue = q;
@@ -78,27 +78,27 @@ public class Source implements CProcess
 	}
 	
         @Override
-	public void execute(int type, double tme)
+	public void execute(int type, double time)
 	{
 		// show arrival
-		System.out.println("Arrival at time = " + tme);
+		System.out.println("Arrival at time = " + time);
 		// give arrived product to queue
 		Product p = new Product();
-		p.stamp(tme,"Creation",name);
+		p.stamp(time,"Creation",name);
 		queue.giveProduct(p);
 		// generate duration
 		if(meanArrTime>0)
 		{
 			double duration = drawRandomExponential(meanArrTime);
 			// Create a new event in the eventlist
-			list.add(this,0,tme+duration); //target,type,time
+			list.add(this,0, time +duration); //target,type,time
 		}
 		else
 		{
 			interArrCnt++;
 			if(interarrivalTimes.length>interArrCnt)
 			{
-				list.add(this,0,tme+interarrivalTimes[interArrCnt]); //target,type,time
+				list.add(this,0, time +interarrivalTimes[interArrCnt]); //target,type,time
 			}
 			else
 			{

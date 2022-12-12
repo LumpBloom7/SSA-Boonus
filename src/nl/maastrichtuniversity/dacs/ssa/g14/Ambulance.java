@@ -3,8 +3,8 @@ package nl.maastrichtuniversity.dacs.ssa.g14;
 import nl.maastrichtuniversity.dacs.ssa.g14.distribution.ProbabilityDistributionFunction;
 import nl.maastrichtuniversity.dacs.ssa.g14.domain.Region;
 import nl.maastrichtuniversity.dacs.ssa.g14.geometry.Coordinate;
-import nl.maastrichtuniversity.dacs.ssa.g14.process.Stamps;
 import nl.maastrichtuniversity.dacs.ssa.g14.process.EventTypes;
+import nl.maastrichtuniversity.dacs.ssa.g14.process.Stamps;
 import simulation.Acceptor;
 import simulation.CEventList;
 import simulation.CProcess;
@@ -151,7 +151,7 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     @Override
     public boolean giveProduct(Patient p) {
         // Only accept something if the machine is idle
-        if (status != STATUS_BUSY) {
+        if (status != STATUS_BUSY && Locations.getRegionIndex(p.coordinate) == dock.getId()) {
             // accept the product
             product = p;
             // mark starting time

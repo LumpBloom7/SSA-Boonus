@@ -12,11 +12,11 @@ public interface Schedule {
         private static final int DAY_MINUTES = 1440;
         private static final NavigableMap<Double, Integer> DISTRIBUTION = new TreeMap<>(
                 Map.of(
-                        7 * 60.0, 2,
-                        11 * 60.0, 3,
-                        15 * 60.0, 3,
-                        19 * 60.0, 2,
-                        23 * 60.0, 2
+                        7 * 60.0, 4,
+                        11 * 60.0, 5,
+                        15 * 60.0, 5,
+                        19 * 60.0, 4,
+                        23 * 60.0, 3
                 )
         );
 

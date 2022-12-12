@@ -14,13 +14,13 @@ public class ShiftScheduling implements CProcess {
     private final CEventList timeline;
     private final Schedule schedule;
     private final List<Region> regions;
-    private final PatientQueue queue;
+    private final List<PatientQueue> queues;
 
-    public ShiftScheduling(CEventList timeline, Schedule schedule, List<Region> regions, PatientQueue queue) {
+    public ShiftScheduling(CEventList timeline, Schedule schedule, List<Region> regions, List<PatientQueue> queues) {
         this.timeline = timeline;
         this.schedule = schedule;
         this.regions = regions;
-        this.queue = queue;
+        this.queues = queues;
     }
 
     public void scheduleAt(double time) {
@@ -35,7 +35,9 @@ public class ShiftScheduling implements CProcess {
         for (Region region : regions) {
             region.setCapacity(capacity);
         }
-        queue.tryPush();
+        for (PatientQueue queue : queues) {
+            queue.tryPush();
+        }
 
         scheduleAt(time + FOUR_HOURS);
     }

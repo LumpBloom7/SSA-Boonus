@@ -2,7 +2,6 @@ package nl.maastrichtuniversity.dacs.ssa.g14;
 
 import nl.maastrichtuniversity.dacs.ssa.g14.distribution.PatientParameterProvider;
 import nl.maastrichtuniversity.dacs.ssa.g14.domain.Region;
-import nl.maastrichtuniversity.dacs.ssa.g14.domain.RegionMap;
 import nl.maastrichtuniversity.dacs.ssa.g14.geometry.Coordinate;
 import nl.maastrichtuniversity.dacs.ssa.g14.process.Stamps;
 import simulation.Acceptor;
@@ -20,21 +19,20 @@ public class PatientSource implements CProcess {
     private final String name;
 
     private final PatientType patientType;
-    private final RegionMap regions;
+    private final Region region;
 
-    public PatientSource(PatientType type, Acceptor<Patient> q, CEventList l, RegionMap regions) {
+    public PatientSource(PatientType type, Acceptor<Patient> q, CEventList l, Region region) {
         timeline = l;
         queue = q;
         name = type.toString() + " source";
         patientType = type;
-        this.regions = regions;
+        this.region = region;
 
         scheduleNextArrival(0);
     }
 
     @Override
     public void execute(int type, double time) {
-        Region region = regions.getRandomRegion();
         Coordinate coordinate = region.getRandomPoint();
         System.out.printf("[%f] New %s patient at coordinate = %s (region=%d)%n", time, patientType, coordinate, region.getId());
         // give arrived product to queue

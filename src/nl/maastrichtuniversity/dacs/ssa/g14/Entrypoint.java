@@ -8,6 +8,7 @@ import simulation.CEventList;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -48,28 +49,30 @@ public class Entrypoint {
 
     public static PatientSink.Results simulateDay() {
         CEventList timeline = new CEventList();
-        PatientQueue queue = new PatientQueue();
 
         Schedule schedule = Schedule.standard();
         RegionMap map = RegionMap.standard(schedule.apply(0));
 
-        new PatientSource(PatientType.A1, queue, timeline, map);
-        new PatientSource(PatientType.A2, queue, timeline, map);
-        new PatientSource(PatientType.B, queue, timeline, map);
-
         PatientSink sink = new PatientSink("patients");
 
         List<Region> regions = map.getRegions();
-        new ShiftScheduling(timeline, schedule, regions, queue).scheduleAt(7 * 60);
+        List<PatientQueue> queues = new ArrayList<>();
 
         for (int i = 0; i < regions.size(); i++) {
             Region region = regions.get(i);
+            PatientQueue queue = new PatientQueue();
+            for (PatientType value : PatientType.values()) {
+                new PatientSource(value, queue, timeline, region);
+            }
             for (int j = 0; j < 5; j++) {
                 Ambulance ambulance = new Ambulance(region, queue, sink, timeline, String.format("Ambulance %d-%d", i, j));
                 region.addAmbulance(ambulance);
                 queue.askProduct(ambulance);
             }
+            queues.add(queue);
         }
+
+        new ShiftScheduling(timeline, schedule, regions, queues).scheduleAt(7 * 60);
 
         timeline.start(1440);
 

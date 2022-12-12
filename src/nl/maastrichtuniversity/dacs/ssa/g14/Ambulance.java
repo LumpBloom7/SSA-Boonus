@@ -70,15 +70,15 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
      */
     public void execute(int type, double time) {
         switch (type) {
-            case EventTypes.PATIENT_PICKED_UP -> {
+            case EventTypes.PATIENT_PICKED_UP:
                 System.out.printf("[%f | %s] Patient picked up%n", time, name);
                 product.stamp(time, Stamps.PATIENT_PICKED_UP, name);
                 status = STATUS_BUSY;
                 double deliveryTime = Locations.timeBetween(product.coordinate, Locations.HOSPITAL_REGION.getCenter());
 
                 timeline.add(this, EventTypes.PATIENT_DELIVERED, time + deliveryTime);
-            }
-            case EventTypes.PATIENT_DELIVERED -> {
+                break;
+            case EventTypes.PATIENT_DELIVERED:
                 location = Locations.HOSPITAL_REGION.getCenter();
                 // Remove product from system
                 product.stamp(time, Stamps.PATIENT_DELIVERED, name);
@@ -106,8 +106,8 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
                 } else {
                     timeline.add(this, EventTypes.AMBULANCE_ADVANCED, time + 1);
                 }
-            }
-            case EventTypes.AMBULANCE_ADVANCED -> {
+                break;
+            case EventTypes.AMBULANCE_ADVANCED:
                 if (isBusy()) {
                     // there was a patient request satisfied
                     return;
@@ -128,8 +128,8 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
                 } else {
                     timeline.add(this, EventTypes.AMBULANCE_ADVANCED, time + 1);
                 }
-            }
-            case EventTypes.AMBULANCE_RETURNED -> {
+                break;
+            case EventTypes.AMBULANCE_RETURNED:
                 if (isBusy()) {
                     // there was a patient request satisfied
                     return;
@@ -138,7 +138,7 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
                 System.out.printf("[%f | %s] Returned to dock%n", time, name);
                 location = dock.getCenter();
                 status = STATUS_IDLE;
-            }
+                break;
         }
     }
 

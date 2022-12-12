@@ -7,6 +7,7 @@ import simulation.Acceptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A sink
@@ -82,10 +83,18 @@ public class PatientSink implements Acceptor<Patient> {
                 String event = product.getEvents().get(i);
                 double time = product.getTimes().get(i);
                 switch (event) {
-                    case Stamps.PATIENT_CREATED -> createdAt = time;
-                    case Stamps.PATIENT_ACCEPTED -> acceptedAt = time;
-                    case Stamps.PATIENT_PICKED_UP -> pickedUpAt = time;
-                    case Stamps.PATIENT_DELIVERED -> deliveredAt = time;
+                    case Stamps.PATIENT_CREATED:
+                        createdAt = time;
+                        break;
+                    case Stamps.PATIENT_ACCEPTED:
+                        acceptedAt = time;
+                        break;
+                    case Stamps.PATIENT_PICKED_UP:
+                        pickedUpAt = time;
+                        break;
+                    case Stamps.PATIENT_DELIVERED:
+                        deliveredAt = time;
+                        break;
                 }
             }
 
@@ -122,10 +131,67 @@ public class PatientSink implements Acceptor<Patient> {
         );
     }
 
-    public record Results(
-            Map<PatientType, List<Double>> acceptanceTimes,
-            Map<PatientType, List<Double>> pickUpTimes,
-            Map<PatientType, List<Double>> deliveryTimes,
-            double a1FifteenMinutesFraction
-    ) {}
+    public static final class Results {
+        private final Map<PatientType, List<Double>> acceptanceTimes;
+        private final Map<PatientType, List<Double>> pickUpTimes;
+        private final Map<PatientType, List<Double>> deliveryTimes;
+        private final double a1FifteenMinutesFraction;
+
+        public Results(
+                Map<PatientType, List<Double>> acceptanceTimes,
+                Map<PatientType, List<Double>> pickUpTimes,
+                Map<PatientType, List<Double>> deliveryTimes,
+                double a1FifteenMinutesFraction
+        ) {
+            this.acceptanceTimes = acceptanceTimes;
+            this.pickUpTimes = pickUpTimes;
+            this.deliveryTimes = deliveryTimes;
+            this.a1FifteenMinutesFraction = a1FifteenMinutesFraction;
+        }
+
+        public Map<PatientType, List<Double>> acceptanceTimes() {
+            return acceptanceTimes;
+        }
+
+        public Map<PatientType, List<Double>> pickUpTimes() {
+            return pickUpTimes;
+        }
+
+        public Map<PatientType, List<Double>> deliveryTimes() {
+            return deliveryTimes;
+        }
+
+        public double a1FifteenMinutesFraction() {
+            return a1FifteenMinutesFraction;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (obj == null || obj.getClass() != this.getClass()) {
+                return false;
+            }
+            var that = (Results) obj;
+            return Objects.equals(this.acceptanceTimes, that.acceptanceTimes) &&
+                    Objects.equals(this.pickUpTimes, that.pickUpTimes) &&
+                    Objects.equals(this.deliveryTimes, that.deliveryTimes) &&
+                    Double.doubleToLongBits(this.a1FifteenMinutesFraction) == Double.doubleToLongBits(that.a1FifteenMinutesFraction);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(acceptanceTimes, pickUpTimes, deliveryTimes, a1FifteenMinutesFraction);
+        }
+
+        @Override
+        public String toString() {
+            return "Results[" +
+                    "acceptanceTimes=" + acceptanceTimes + ", " +
+                    "pickUpTimes=" + pickUpTimes + ", " +
+                    "deliveryTimes=" + deliveryTimes + ", " +
+                    "a1FifteenMinutesFraction=" + a1FifteenMinutesFraction + ']';
+        }
+    }
 }

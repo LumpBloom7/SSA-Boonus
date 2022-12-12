@@ -2,15 +2,14 @@ package nl.maastrichtuniversity.dacs.ssa.g14;
 
 import simulation.Acceptor;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 
 public class PatientQueue implements Acceptor<Patient>
 {
     /** List in which the products are kept */
-    private ArrayList<Patient> row;
+    private final List<Patient> products;
     /** Requests from machine that will be handling the products */
-    private ArrayList<Ambulance> requests;
+    private final List<Ambulance> requests;
 
     /**
      *	Initializes the queue and introduces a dummy machine
@@ -18,12 +17,12 @@ public class PatientQueue implements Acceptor<Patient>
      */
     public PatientQueue()
     {
-        row = new ArrayList<>();
+        products = new ArrayList<>();
         requests = new ArrayList<>();
     }
 
     public boolean hasProduct(){
-        return !row.isEmpty();
+        return !products.isEmpty();
     }
 
     /**
@@ -32,14 +31,13 @@ public class PatientQueue implements Acceptor<Patient>
      */
     public boolean askProduct(Ambulance machine)
     {
-        if(row.isEmpty()){
+        if (products.isEmpty()) {
             requests.add(machine);
-            return true;
+            return false;
         }
 
-        var bestPatient = findBestPatientFor(machine);
-        machine.giveProduct(bestPatient);
-        row.remove(bestPatient);
+        machine.giveProduct(products.get(0));
+        products.remove(0);
         return true;
     }
 
@@ -47,27 +45,70 @@ public class PatientQueue implements Acceptor<Patient>
      *	Offer a product to the queue
      *	It is investigated whether a machine wants the product, otherwise it is stored
      */
-    public boolean giveProduct(Patient p)
-    {
-        // Check if the machine accepts it
-        if(requests.isEmpty()) {
-            row.add(p);
-            return true;
+    public boolean giveProduct(Patient p) {
+        if (products.isEmpty()) {
+            var bestAmbulance = tryFindBestAmbulance(p);
+
+            if (bestAmbulance.isPresent()) {
+                var index = bestAmbulance.getAsInt();
+                var ambulance = requests.get(index);
+                ambulance.giveProduct(p);
+                requests.remove(index);
+                return true;
+            }
         }
 
-        var bestAmbulance = findBestAmbulanceFor(p);
-        bestAmbulance.giveProduct(p);
-        requests.remove(bestAmbulance);
+        products.add(p);
+        products.sort(Patient::compareTo);
+        return false;
+    }
 
+    public boolean tryPush() {
+        int processed = 0;
+
+        while (tryAdvance()) {
+            processed++;
+        }
+
+        return processed != 0;
+    }
+
+    private boolean tryAdvance() {
+        if (products.isEmpty()) {
+            return false;
+        }
+
+        Patient patient = products.get(0);
+        OptionalInt index = tryFindBestAmbulance(patient);
+
+        if (index.isEmpty()) {
+            return false;
+        }
+
+        products.remove(0);
+        Ambulance ambulance = requests.get(index.getAsInt());
+        requests.remove(index.getAsInt());
+        ambulance.giveProduct(patient);
         return true;
     }
 
-    private Ambulance findBestAmbulanceFor(Patient p){
-        return requests.stream().min(Comparator.comparingDouble(lhs -> Locations.timeBetween(p.location, lhs.dockLocation))).get();
-    }
+    private OptionalInt tryFindBestAmbulance(Patient p) {
+        double minDistance = Double.POSITIVE_INFINITY;
+        int index = -1;
+        for (int i = 0; i < requests.size(); i++) {
+            Ambulance ambulance = requests.get(i);
 
-    private Patient findBestPatientFor(Ambulance a){
-        // TODO: Maybe take distance into account?
-        return row.stream().min(Patient::compareTo).get();
+            if (!ambulance.isAssignable()) {
+                continue;
+            }
+
+            double distance = Locations.timeBetween(p.coordinate, ambulance.location);
+            if (distance < minDistance) {
+                index = i;
+                minDistance = distance;
+            }
+        }
+
+        return index == -1 ? OptionalInt.empty() : OptionalInt.of(index);
     }
 }

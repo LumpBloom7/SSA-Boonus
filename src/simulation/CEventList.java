@@ -37,15 +37,14 @@ public class CEventList implements CProcess
 	*/
 	public void add(CProcess target, int type, double tme)
 	{
-		boolean success=false;
+		boolean success = false;
 		// First create a new event using the parameters
-		CEvent evnt;
-                evnt = new CEvent(target,type,tme);
+		CEvent evnt = new CEvent(target,type,tme);
 		// Now it is examened where the event has to be inserted in the list
 		for(int i=0;i<events.size();i++)
 		{
 			// The events are sorted chronologically
-			if(events.get(i).getExecutionTime()>evnt.getExecutionTime())
+			if(events.get(i).getTimestamp()>evnt.getTimestamp())
 			{
 				// If an event is found in the list that has to be executed after the current event
 				success=true;
@@ -71,7 +70,7 @@ public class CEventList implements CProcess
 		while((events.size()>0)&&(!stopFlag))
 		{
 			// Make the similation time equal to the execution time of the first event in the list that has to be processed
-			currentTime=events.get(0).getExecutionTime();
+			currentTime=events.get(0).getTimestamp();
 			// Let the element be processed
 			events.get(0).execute();
 			// Remove the event from the list
@@ -91,7 +90,7 @@ public class CEventList implements CProcess
 		while((events.size()>0)&&(!stopFlag))
 		{
 			// Make the similation time equal to the execution time of the first event in the list that has to be processed
-			currentTime=events.get(0).getExecutionTime();
+			currentTime=events.get(0).getTimestamp();
 			// Let the element be processed
 			events.get(0).execute();
 			// Remove the event from the list
@@ -118,10 +117,10 @@ public class CEventList implements CProcess
 	/**
 	*	Method to have this object process an event
 	*	@param type	The type of the event that has to be executed
-	*	@param tme	The current time
+	*	@param time	The current time
 	*/
         @Override
-	public void execute(int type, double tme)
+	public void execute(int type, double time)
 	{
 		if(type==-1)
 			stop();

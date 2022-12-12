@@ -91,14 +91,14 @@ public class Machine implements CProcess, Acceptor<Product>
 	/**
 	*	Method to have this object execute an event
 	*	@param type	The type of the event that has to be executed
-	*	@param tme	The current time
+	*	@param time	The current time
 	*/
-	public void execute(int type, double tme)
+	public void execute(int type, double time)
 	{
 		// show arrival
-		System.out.println("Product finished at time = " + tme);
+		System.out.println("Product finished at time = " + time);
 		// Remove product from system
-		product.stamp(tme,"Production complete",name);
+		product.stamp(time,"Production complete",name);
 		sink.giveProduct(product);
 		product=null;
 		// set machine status to idle

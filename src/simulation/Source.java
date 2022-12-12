@@ -78,27 +78,27 @@ public class Source implements CProcess
 	}
 	
         @Override
-	public void execute(int type, double tme)
+	public void execute(int type, double time)
 	{
 		// show arrival
-		System.out.println("Arrival at time = " + tme);
+		System.out.println("Arrival at time = " + time);
 		// give arrived product to queue
 		Product p = new Product();
-		p.stamp(tme,"Creation",name);
+		p.stamp(time,"Creation",name);
 		queue.giveProduct(p);
 		// generate duration
 		if(meanArrTime>0)
 		{
 			double duration = drawRandomExponential(meanArrTime);
 			// Create a new event in the eventlist
-			list.add(this,0,tme+duration); //target,type,time
+			list.add(this,0, time +duration); //target,type,time
 		}
 		else
 		{
 			interArrCnt++;
 			if(interarrivalTimes.length>interArrCnt)
 			{
-				list.add(this,0,tme+interarrivalTimes[interArrCnt]); //target,type,time
+				list.add(this,0, time +interarrivalTimes[interArrCnt]); //target,type,time
 			}
 			else
 			{

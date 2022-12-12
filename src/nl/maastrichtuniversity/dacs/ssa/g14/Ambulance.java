@@ -1,19 +1,32 @@
 package nl.maastrichtuniversity.dacs.ssa.g14;
 
-import simulation.*;
+import nl.maastrichtuniversity.dacs.ssa.g14.distribution.ProbabilityDistributionFunction;
+import nl.maastrichtuniversity.dacs.ssa.g14.domain.Region;
+import nl.maastrichtuniversity.dacs.ssa.g14.geometry.Coordinate;
+import nl.maastrichtuniversity.dacs.ssa.g14.process.Stamps;
+import nl.maastrichtuniversity.dacs.ssa.g14.process.EventTypes;
+import simulation.Acceptor;
+import simulation.CEventList;
+import simulation.CProcess;
 
 public class Ambulance implements CProcess, Acceptor<Patient> {
-    private static final int RETURN_TO_DOCK_T = 1;
+    // Erlang-3 with lambda = 1 as per document
+    private static final ProbabilityDistributionFunction PROCESSING_TIME_GENERATOR = ProbabilityDistributionFunction.Erlang.of(3, 1);
+    private static final char STATUS_IDLE = 'i';
+    private static final char STATUS_BUSY = 'b';
+    private static final char STATUS_RETURNING = 'r';
 
-    private int currentLoc;
+    /** Eventlist that will manage events */
+    private final CEventList timeline;
 
-    public final int dockLocation;
+    /**
+     * Dock ambulance belongs to
+     */
+    public final Region dock;
+    public Coordinate location;
 
     /** Patient that is being handled */
     private Patient product;
-
-    /** Eventlist that will manage events */
-    private final CEventList eventlist;
 
     /** Queue from which the machine has to take products */
     private PatientQueue queue;
@@ -27,77 +40,106 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     /** Machine name */
     private final String name;
 
-    /** Mean processing time */
-    private final double meanProcTime;
+    private boolean assignable = false;
 
     /**
      * Constructor
      * Service times are exponentially distributed with mean 30
      *
-     * @param dockLocation The location of the dock for this ambulance
-     * @param q            Queue from which the machine has to take products
-     * @param s            Where to send the completed products
-     * @param e            Eventlist that will manage events
-     * @param n            The name of the machine
+     * @param dock The location of the dock for this ambulance
+     * @param q    Queue from which the machine has to take products
+     * @param s    Where to send the completed products
+     * @param e    Eventlist that will manage events
+     * @param n    The name of the machine
      */
-    public Ambulance(int dockLocation, PatientQueue q, Acceptor<Patient> s, CEventList e, String n) {
-        this.dockLocation = currentLoc = dockLocation;
-
-        status = 'i';
+    public Ambulance(Region dock, PatientQueue q, Acceptor<Patient> s, CEventList e, String n) {
+        this.dock = dock;
+        location = dock.getCenter();
+        status = STATUS_IDLE;
         queue = q;
         sink = s;
-        eventlist = e;
+        timeline = e;
         name = n;
-        meanProcTime = 0.083;
-        queue.askProduct(this);
     }
 
     /**
      * Method to have this object execute an event
      *
      * @param type The type of the event that has to be executed
-     * @param tme  The current time
+     * @param time  The current time
      */
-    public void execute(int type, double tme) {
-        if (type == RETURN_TO_DOCK_T) {
-            onReturnToDock(tme);
-            return;
+    public void execute(int type, double time) {
+        switch (type) {
+            case EventTypes.PATIENT_PICKED_UP -> {
+                System.out.printf("[%f | %s] Patient picked up%n", time, name);
+                product.stamp(time, Stamps.PATIENT_PICKED_UP, name);
+                status = STATUS_BUSY;
+                double deliveryTime = Locations.timeBetween(product.coordinate, Locations.HOSPITAL_REGION.getCenter());
+
+                timeline.add(this, EventTypes.PATIENT_DELIVERED, time + deliveryTime);
+            }
+            case EventTypes.PATIENT_DELIVERED -> {
+                location = Locations.HOSPITAL_REGION.getCenter();
+                // Remove product from system
+                product.stamp(time, Stamps.PATIENT_DELIVERED, name);
+                sink.giveProduct(product);
+                product = null;
+                // set machine status to returning
+                status = STATUS_RETURNING;
+                if (queue.askProduct(this)) {
+                    System.out.printf(
+                            "[%f | %s] Patient brought to hospital, instantly got new request for x=%f y=%f (region: %d)%n",
+                            time,
+                            name,
+                            product.coordinate.getX(),
+                            product.coordinate.getY(),
+                            Locations.tryGetRegionIndex(product.coordinate).orElse(-1)
+                    );
+                    return;
+                }
+                // show arrival
+                double returnTime = Locations.timeBetween(Locations.HOSPITAL_REGION.getCenter(), dock.getCenter());
+                System.out.printf("[%f | %s] Patient brought to hospital, going back, eta: %f%n", time, name, returnTime);
+
+                if (returnTime == 0) {
+                    timeline.add(this, EventTypes.AMBULANCE_RETURNED, time);
+                } else {
+                    timeline.add(this, EventTypes.AMBULANCE_ADVANCED, time + 1);
+                }
+            }
+            case EventTypes.AMBULANCE_ADVANCED -> {
+                if (isBusy()) {
+                    // there was a patient request satisfied
+                    return;
+                }
+
+                double xOffset = location.getX() - dock.getCenter().getX();
+                double yOffset = location.getY() - dock.getCenter().getY();
+
+                double xMovementSign = xOffset == 0 ? 1 : -(xOffset / Math.abs(xOffset));
+                double xMovementDistance = Math.min(Math.abs(xOffset), 1);
+                double yMovementSign = yOffset == 0 ? 1 : -(yOffset / Math.abs(yOffset));
+                double yMovementDistance = Math.min(Math.abs(yOffset), 1 - xMovementDistance);
+
+                location = location.translate(xMovementSign * xMovementDistance, yMovementSign * yMovementDistance);
+
+                if (xMovementDistance + yMovementDistance < 1) {
+                    timeline.add(this, EventTypes.AMBULANCE_RETURNED, time);
+                } else {
+                    timeline.add(this, EventTypes.AMBULANCE_ADVANCED, time + 1);
+                }
+            }
+            case EventTypes.AMBULANCE_RETURNED -> {
+                if (isBusy()) {
+                    // there was a patient request satisfied
+                    return;
+                }
+
+                System.out.printf("[%f | %s] Returned to dock%n", time, name);
+                location = dock.getCenter();
+                status = STATUS_IDLE;
+            }
         }
-
-        // show arrival
-        System.out.printf("[%s] Patient brought to hospital, time %f\n", name, tme);
-        // Remove product from system
-        product.stamp(tme, "Production complete", name);
-        sink.giveProduct(product);
-        product = null;
-        // set machine status to idle
-        status = 'i';
-        currentLoc = 0;
-
-        // Ask the queue for products
-        // TODO: or if shift change imminent
-        if (queue.hasProduct())
-            queue.askProduct(this);
-        else
-            returnToDock(tme);
-    }
-
-    private void returnToDock(double tme) {
-        var returnTime = Locations.timeBetween(0, dockLocation);
-
-        eventlist.add(this, RETURN_TO_DOCK_T, tme + returnTime);
-        System.out.printf("[%s] No patients, returning to dock @ %d\n", name, dockLocation);
-        status = 'b';
-    }
-
-    private void onReturnToDock(double tme) {
-        // TODO: IF SHIFT CHANGE
-
-        System.out.printf("[%s] Returned to dock\n", name);
-        currentLoc = dockLocation;
-
-        status = 'i';
-        queue.askProduct(this);
     }
 
     /**
@@ -109,12 +151,19 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
     @Override
     public boolean giveProduct(Patient p) {
         // Only accept something if the machine is idle
-        if (status == 'i') {
+        if (status != STATUS_BUSY) {
             // accept the product
             product = p;
             // mark starting time
-            product.stamp(eventlist.getTime(), "Production started", name);
-            System.out.printf("[%s] Going to pick up patient @ %d\n", name, p.location);
+            product.stamp(timeline.getTime(), Stamps.PATIENT_ACCEPTED, name);
+            System.out.printf(
+                    "[%f | %s] Going to pick up patient at x=%f y=%f (region: %d)%n",
+                    timeline.getTime(),
+                    name,
+                    p.coordinate.getX(),
+                    p.coordinate.getY(),
+                    Locations.tryGetRegionIndex(p.coordinate).orElse(-1)
+            );
             // start production
             startProduction();
             // Flag that the product has arrived
@@ -127,27 +176,36 @@ public class Ambulance implements CProcess, Acceptor<Patient> {
 
     /**
      * Starting routine for the production
-     * Start the handling of the current product with an exponentionally distributed
-     * processingtime with average 0.083
+     * Start the handling of the current product with an erlang-3 based
+     * processing time.
      * This time is placed in the eventlist
      */
     private void startProduction() {
-        // duration = processingTime + Time to get there + time to get back;
-        double duration = drawRandomExponential(meanProcTime) + Locations.timeBetween(product.location, currentLoc)
-                + Locations.timeBetween(product.location, 0);
+        double processingTime = PROCESSING_TIME_GENERATOR.compute(Math.random());
+        double movementTime = Locations.timeBetween(product.coordinate, dock.getCenter());
+        double pickupTime = processingTime + movementTime;
 
         // Create a new event in the eventlist
-        double tme = eventlist.getTime();
-        eventlist.add(this, 0, tme + duration); // target,type,time
+        double time = timeline.getTime();
+        timeline.add(this, EventTypes.PATIENT_PICKED_UP, time + pickupTime); // target,type,time
         // set status to busy
-        status = 'b';
+        status = STATUS_BUSY;
     }
 
-    public static double drawRandomExponential(double mean) {
-        // draw a [0,1] uniform distributed number
-        double u = Math.random();
-        // Convert it into a exponentially distributed random variate with mean 33
-        double res = -mean * Math.log(u);
-        return res;
+    public int getStatus() {
+        return status;
+    }
+
+    public boolean isBusy() {
+        return status == STATUS_BUSY;
+    }
+
+    public Ambulance setAssignable(boolean status) {
+        assignable = status;
+        return this;
+    }
+
+    public boolean isAssignable() {
+        return assignable;
     }
 }
